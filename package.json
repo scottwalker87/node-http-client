@@ -1,0 +1,23 @@
+{
+  "name": "@scottwalker/node-http-client",
+  "version": "1.0.0",
+  "description": "Простой HTTP/HTTPS клиент для NodeJS",
+  "author": "scottwalker",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "http client", 
+    "http-client"
+  ],
+  "bugs": {
+    "url": "https://github.com/scottwalker87/node-http-client/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottwalker87/node-http-client.git"
+  },
+  "homepage": "https://github.com/scottwalker87/node-http-client#readme"
+}
