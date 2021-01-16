@@ -22,7 +22,8 @@ const MIME_TYPE_JSON = "application/json"
 
 // Пресеты заголовко запроса
 const jsonHeaders = {
-  "Content-Type": MIME_TYPE_JSON
+  'Accept': MIME_TYPE_JSON,
+  "Content-Type": `${MIME_TYPE_JSON}; charset=UTF-8`
 }
 
 // API HTTP/HTTPS клиента
@@ -34,7 +35,7 @@ const api = {
    */
   isJsonContent(headers) {
     return Object.entries(headers).some(([key, value]) => {
-      return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.startsWith(MIME_TYPE_JSON)
+      return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.includes(MIME_TYPE_JSON)
     })
   },
 
@@ -164,4 +165,4 @@ const api = {
   }
 }
 
-module.exports = { ...api, jsonHeaders }
+module.exports = { ...api, jsonHeaders,  METHOD_GET, METHOD_POST, METHOD_PUT, METHOD_DELETE,  METHOD_HEAD }
