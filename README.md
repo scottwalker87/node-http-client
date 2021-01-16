@@ -1,4 +1,10 @@
-# node-http-client
+# Node HTTP client
+
+[![Build Status](https://img.shields.io/github/checks-status/scottwalker87/node-http-client/main?style=for-the-badge)](https://github.com/scottwalker87/node-http-client)
+[![Build Version](https://img.shields.io/github/package-json/v/scottwalker87/node-http-client?style=for-the-badge)](https://github.com/scottwalker87/node-http-client)
+[![NPM Package](https://img.shields.io/npm/v/@scottwalker/node-http-client?style=for-the-badge)](https://www.npmjs.com/package/@scottwalker/node-http-client)
+[![Scottweb](https://img.shields.io/badge/Scottweb-Web%20Development-red?style=for-the-badge)](http://scottweb.ru/)
+
 Простой HTTP/HTTPS клиент для NodeJS
 
 #### Пример создания простого GET запроса
