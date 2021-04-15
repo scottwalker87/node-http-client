@@ -4,7 +4,7 @@ const qs = require("querystring")
 const { URL } = require("url")
 
 // Протоколы запроса
-const HTTP_PROTOCOL = "http:"
+// const HTTP_PROTOCOL = "http:"
 const HTTPS_PROTOCOL = "https:"
 
 // Методы запроса
@@ -26,8 +26,34 @@ const jsonHeaders = {
   "Content-Type": `${MIME_TYPE_JSON}; charset=UTF-8`
 }
 
-// API HTTP/HTTPS клиента
-const api = {
+/**
+ * HTTP/HTTPS клиент
+ */
+class HttpClient {
+  /**
+   * Инициализировать клиент
+   * @param {Object} config конфигурация
+   */
+  constructor(config) {
+    this.config = config || {}
+  }
+
+  /**
+   * Базовый урл
+   * @return {String|null}
+   */
+  get baseUrl() {
+    return this.config.baseUrl || null
+  }
+
+  /**
+   * Заголовки по умолчанию
+   * @return {Object}
+   */
+  get headers() {
+    return this.config.headers || {}
+  }
+
   /**
    * Проверить заголовки на параметр Content-Type: application/json
    * @param {Object} headers заголовки 
@@ -37,7 +63,22 @@ const api = {
     return Object.entries(headers).some(([key, value]) => {
       return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.includes(MIME_TYPE_JSON)
     })
-  },
+  }
+
+  /**
+   * Нормализовать путь в запросе
+   * @param {URL} urlOptions 
+   * @param {Object} query 
+   * @return {String}
+   */
+  normalizePath(urlOptions, query) {
+    // Сформировать объект GET параметров на основе параметров из url и query
+    const search = { ...qs.decode(urlOptions.search.replace("?", "")), ...query }
+    // Сформировать строку GET параметров
+    const queryString = Object.keys(search).length ? "?" + qs.encode(search) :  "" 
+
+    return urlOptions.pathname + queryString
+  }
 
   /**
    * Создать HTTP/HTTPS запрос
@@ -46,11 +87,6 @@ const api = {
    */
   request({ method, url, query, data, headers }) {
     return new Promise((resolve, reject) => {
-      // Проверить URL адрес на наличие протокола HTTP/HTTPS
-      if (!url.startsWith(HTTP_PROTOCOL) && !url.startsWith(HTTPS_PROTOCOL)) {
-        reject({ message: `URL адрес ${url} не является адресом с HTTP/HTTPS протоколом` })
-      }
-    
       // Нормализовать метод запроса
       method = method ? String(method).toUpperCase() : METHOD_GET
       // Нормализовать заголовки  
@@ -59,20 +95,17 @@ const api = {
       query = query || {}
 
       // Парсить опции URL 
-      const urlOptions = new URL(url)
+      const urlOptions = new URL(url, this.baseUrl)      
       // Определить драйвер клиента создающего запрос
       const driver = urlOptions.protocol === HTTPS_PROTOCOL ? https : http
-      // Сформировать GET параметры на основе параметров из url и query
-      const search = { ...qs.decode(urlOptions.search.replace("?", "")), ...query }
       // Сформировать опции запроса
       const options = {
         method,
-        headers,
+        headers: { ...this.headers, ...headers },
         protocol: urlOptions.protocol,
         hostname: urlOptions.hostname,
         port: urlOptions.port,
-        path: urlOptions.pathname,
-        search: qs.encode(search)
+        path: this.normalizePath(urlOptions, query),
       }
 
       // Создать запрос
@@ -109,7 +142,7 @@ const api = {
       // Завершить запрос
       request.end()
     }) 
-  },
+  }
 
   /**
    * Создать GET запрос
@@ -119,7 +152,7 @@ const api = {
    */
   get(url, { query, headers }) {
     return this.request({ method: METHOD_GET, url, query, headers })
-  },
+  }
 
   /**
    * Создать POST запрос
@@ -130,7 +163,7 @@ const api = {
    */
   post(url, data, { query, headers }) {
     return this.request({ method: METHOD_POST, url, query, data, headers })
-  },
+  }
   
   /**
    * Создать PUT запрос
@@ -141,7 +174,7 @@ const api = {
    */
   put(url, data, { query, headers }) {
     return this.request({ method: METHOD_PUT, url, query, data, headers })
-  },
+  }
 
   /**
    * Создать DELETE запрос
@@ -152,7 +185,7 @@ const api = {
    */
   delete(url, data, { query, headers }) {
     return this.request({ method: METHOD_DELETE, url, query, data, headers })
-  },
+  }
 
   /**
    * Создать HEAD запрос
@@ -165,4 +198,4 @@ const api = {
   }
 }
 
-module.exports = { ...api, jsonHeaders,  METHOD_GET, METHOD_POST, METHOD_PUT, METHOD_DELETE,  METHOD_HEAD }
+module.exports = { HttpClient, jsonHeaders, METHOD_GET, METHOD_POST, METHOD_PUT, METHOD_DELETE, METHOD_HEAD }

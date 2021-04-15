@@ -1,6 +1,5 @@
 # Node HTTP client
 
-[![Build Status](https://img.shields.io/github/checks-status/scottwalker87/node-http-client/main?style=for-the-badge)](https://github.com/scottwalker87/node-http-client)
 [![Build Version](https://img.shields.io/github/package-json/v/scottwalker87/node-http-client?style=for-the-badge)](https://github.com/scottwalker87/node-http-client)
 [![NPM Package](https://img.shields.io/npm/v/@scottwalker/node-http-client?style=for-the-badge)](https://www.npmjs.com/package/@scottwalker/node-http-client)
 [![Scottweb](https://img.shields.io/badge/Scottweb-Web%20Development-red?style=for-the-badge)](http://scottweb.ru/)
@@ -9,16 +8,22 @@
 
 #### Пример создания простого GET запроса
 ```js
-const { get } = require("@scottwalker/node-http-client")
+const { HttpClient } = require("@scottwalker/node-http-client")
 
-get("https://example.com")
+// Инициализировать HTTP клиент
+const httpClient = new HttpClient()
+
+httpClient.get("https://example.com")
   .then(content => console.log(content))
   .catch(error => console.error(error))
 ```
 
 #### Пример создания простого POST запроса
 ```js
-const { post } = require("@scottwalker/node-http-client")
+const { HttpClient } = require("@scottwalker/node-http-client")
+
+// Инициализировать HTTP клиент
+const httpClient = new HttpClient()
 
 /**
  * Отправить данные
@@ -27,7 +32,7 @@ const { post } = require("@scottwalker/node-http-client")
  */
 async function postData(data = {}) {
   try {
-    return await post("https://example.com", data)
+    return await httpClient.post("https://example.com", data)
   } catch (error) {
     console.error(error)
 
@@ -43,11 +48,20 @@ postData({ message: "Hello World" })
 (при условии валидного JSON в теле ответа), также для удобства можно использовать пересет `jsonHeaders`
 
 ```js
-const { request, jsonHeaders, METHOD_PUT } = require("@scottwalker/node-http-client")
+const { HttpClient, jsonHeaders, METHOD_PUT } = require("@scottwalker/node-http-client")
 
-const requestPromise = request({
+// Инициализировать HTTP клиент (с конфигурацией)
+const httpClient = new HttpClient({
+  baseUrl: "https://example.com",
+  headers: {
+    ...jsonHeaders
+    "X-My-Param": "hello"
+  }
+})
+
+const requestPromise = httpClient.request({
   method: METHOD_PUT,
-  url: "https://example.com",
+  url: "info/update",
   query: { 
     limit: 1,
     order: "desc" 
@@ -63,7 +77,14 @@ requestPromise
   .catch(error => console.error(error))
 ```
 
-Функция request принимает в себя объект содержащий следующие параметры:
+Конструктор клиента принимает в себя объект конфигурации, содержащий следующие параметры:
+
+```
+baseUrl - базовый URL для всех запросов
+headers - заголовки по умолчанию
+```
+
+Метод request принимает в себя объект, содержащий следующие параметры:
 
 ```
 method - метод запроса
