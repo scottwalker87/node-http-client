@@ -17,14 +17,9 @@ const METHOD_HEAD = "HEAD"
 // Заголовки запроса
 const HEADER_KEY_CONTENT_TYPE = "content-type"
 
-// MIME типы содержимого в теле запроса
-const MIME_TYPE_JSON = "application/json"
-
-// Пресеты заголовко запроса
-const jsonHeaders = {
-  'Accept': MIME_TYPE_JSON,
-  "Content-Type": `${MIME_TYPE_JSON}; charset=UTF-8`
-}
+// Типы содержимого
+const CONTENT_TYPE_JSON = "application/json"
+const CONTENT_TYPE_FORM = "application/x-www-form-urlencoded"
 
 /**
  * HTTP/HTTPS клиент
@@ -61,23 +56,71 @@ class HttpClient {
    */
   isJsonContent(headers) {
     return Object.entries(headers).some(([key, value]) => {
-      return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.includes(MIME_TYPE_JSON)
+      return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.includes(CONTENT_TYPE_JSON)
     })
   }
 
   /**
-   * Нормализовать путь в запросе
+   * Проверить заголовки на параметр Content-Type: application/x-www-form-urlencoded
+   * @param {Object} headers заголовки 
+   * @return {Boolean}
+   */
+  isFormContent(headers) {
+    return Object.entries(headers).some(([key, value]) => {
+      return key.toLowerCase() === HEADER_KEY_CONTENT_TYPE && value.includes(CONTENT_TYPE_FORM)
+    })
+  }
+
+  /**
+   * Нормализовать URL
    * @param {URL} urlOptions 
    * @param {Object} query 
    * @return {String}
    */
-  normalizePath(urlOptions, query) {
-    // Сформировать объект GET параметров на основе параметров из url и query
-    const search = { ...qs.decode(urlOptions.search.replace("?", "")), ...query }
-    // Сформировать строку GET параметров
-    const queryString = Object.keys(search).length ? "?" + qs.encode(search) :  "" 
+  normalizeUrl(url, query) {
+    query = this.normalizeQuery({ ...this.extractQuery(url), ...query })
+    
+    url = url.includes("?") ? url.substr(0, url.indexOf("?")) : url
+    url = url.startsWith("/") ? url.substr(1) : url
+    url = this.baseUrl + "/" + url + query
 
-    return urlOptions.pathname + queryString
+    return url
+  }
+
+  /**
+   * Извлечь GET параметры из URL
+   * @param {String} url 
+   * @return {Object}
+   */
+  extractQuery(url) {
+    if (url.includes("?")) {
+      const query = url.substr(url.indexOf("?") + 1)
+
+      return qs.decode(query)
+    }
+
+    return {}
+  }
+
+  /**
+   * Нормализовать GET параметры запроса
+   * @param {Object} query 
+   * @return {String}
+   */
+  normalizeQuery(query) {
+    query = { ...query }
+
+    for (const key in query) {
+      if (query[key] === null || query[key] === undefined) {
+        delete query[key]
+      }
+    }
+
+    if (Object.keys(query).length) {
+      return "?" + qs.encode(query)
+    }
+
+    return ""
   }
 
   /**
@@ -95,7 +138,7 @@ class HttpClient {
       query = query || {}
 
       // Парсить опции URL 
-      const urlOptions = new URL(url, this.baseUrl)      
+      const urlOptions = new URL(this.normalizeUrl(url, query))      
       // Определить драйвер клиента создающего запрос
       const driver = urlOptions.protocol === HTTPS_PROTOCOL ? https : http
       // Сформировать опции запроса
@@ -105,9 +148,9 @@ class HttpClient {
         protocol: urlOptions.protocol,
         hostname: urlOptions.hostname,
         port: urlOptions.port,
-        path: this.normalizePath(urlOptions, query),
+        path: urlOptions.pathname + urlOptions.search,
       }
-
+      
       // Создать запрос
       const request = driver.request(options, response => {
         let body = ''
@@ -134,8 +177,17 @@ class HttpClient {
 
       // Отправить тело запроса
       if (typeof data !== "undefined") {
-        data = JSON.stringify(data)
+        // Если это отправка формы
+        if (this.isFormContent(options.headers)) {
+          data = qs.stringify(data)
+        } 
 
+        // Если это отправка JSON тела
+        else if (this.isJsonContent(options.headers)) {
+          data = JSON.stringify(data)
+        }
+        
+        // Включить тело в запрос
         request.write(data)
       }
 
@@ -150,7 +202,12 @@ class HttpClient {
    * @param {Object} params 
    * @return {Promise<{ body, response }>}
    */
-  get(url, { query, headers }) {
+  get(url, params) {
+    params = params || {}
+
+    const query = params.query || {}
+    const headers = params.headers || {}
+
     return this.request({ method: METHOD_GET, url, query, headers })
   }
 
@@ -161,7 +218,12 @@ class HttpClient {
    * @param {Object} params 
    * @return {Promise<{ body, response }>}
    */
-  post(url, data, { query, headers }) {
+  post(url, data, params) {
+    params = params || {}
+
+    const query = params.query || {}
+    const headers = params.headers || {}
+
     return this.request({ method: METHOD_POST, url, query, data, headers })
   }
   
@@ -172,7 +234,12 @@ class HttpClient {
    * @param {Object} params 
    * @return {Promise<{ body, response }>}
    */
-  put(url, data, { query, headers }) {
+  put(url, data, params) {
+    params = params || {}
+
+    const query = params.query || {}
+    const headers = params.headers || {}
+
     return this.request({ method: METHOD_PUT, url, query, data, headers })
   }
 
@@ -183,7 +250,12 @@ class HttpClient {
    * @param {Object} params 
    * @return {Promise<{ body, response }>}
    */
-  delete(url, data, { query, headers }) {
+  delete(url, data, params) {
+    params = params || {}
+
+    const query = params.query || {}
+    const headers = params.headers || {}
+
     return this.request({ method: METHOD_DELETE, url, query, data, headers })
   }
 
@@ -193,9 +265,35 @@ class HttpClient {
    * @param {Object} params 
    * @return {Promise<{ body, response }>}
    */
-  head(url, { query, headers }) {
+  head(url, params) {
+    params = params || {}
+
+    const query = params.query || {}
+    const headers = params.headers || {}
+
     return this.request({ method: METHOD_HEAD, url, query, headers })
   }
 }
 
-module.exports = { HttpClient, jsonHeaders, METHOD_GET, METHOD_POST, METHOD_PUT, METHOD_DELETE, METHOD_HEAD }
+// Пресеты заголовков запроса
+const headers = {
+  json: {
+    'Accept': CONTENT_TYPE_JSON,
+    "Content-Type": `${CONTENT_TYPE_JSON}; charset=UTF-8`
+  },
+  form: {
+    "Content-Type": `${CONTENT_TYPE_FORM}; charset=UTF-8`
+  }
+}
+
+module.exports = { 
+  HttpClient, 
+  METHOD_GET, 
+  METHOD_POST, 
+  METHOD_PUT, 
+  METHOD_DELETE, 
+  METHOD_HEAD,
+  CONTENT_TYPE_JSON,
+  CONTENT_TYPE_FORM,
+  headers
+}

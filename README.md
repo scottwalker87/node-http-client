@@ -13,7 +13,7 @@ const { HttpClient } = require("@scottwalker/node-http-client")
 // Инициализировать HTTP клиент
 const httpClient = new HttpClient()
 
-httpClient.get("https://example.com")
+httpClient.get("https://example.com", { query: { page: 1 } })
   .then(content => console.log(content))
   .catch(error => console.error(error))
 ```
@@ -45,16 +45,16 @@ postData({ message: "Hello World" })
 
 #### Пример создания более сложного запроса
 Если указать в заголовках запроса `Content-Type: application/json`, то тело ответа будет преобразовано в js объект 
-(при условии валидного JSON в теле ответа), также для удобства можно использовать пересет `jsonHeaders`
+(при условии валидного JSON в теле ответа), также для удобства можно использовать пересет `headers.json`
 
 ```js
-const { HttpClient, jsonHeaders, METHOD_PUT } = require("@scottwalker/node-http-client")
+const { HttpClient, headers, METHOD_PUT } = require("@scottwalker/node-http-client")
 
 // Инициализировать HTTP клиент (с конфигурацией)
 const httpClient = new HttpClient({
   baseUrl: "https://example.com",
   headers: {
-    ...jsonHeaders
+    ...headers.json
     "X-My-Param": "hello"
   }
 })
@@ -69,7 +69,7 @@ const requestPromise = httpClient.request({
   data: { 
     message: "Hello World"
   },
-  headers: jsonHeaders
+  headers: headers.json
 })
 
 requestPromise
@@ -92,4 +92,20 @@ url - URL адрес
 query - GET параметры запроса
 data - тело запроса
 headers - заголовки
+```
+
+#### Пример отправки формы
+Воспользуйтесь пересетом `headers.form`
+
+```js
+const { HttpClient, headers } = require("@scottwalker/node-http-client")
+
+// Инициализировать HTTP клиент (с конфигурацией)
+const httpClient = new HttpClient({
+  baseUrl: "https://example.com",
+})
+
+httpClient.post("order", { name: "scott", price: 10 }, { headers: headers.form })
+  .then(content => console.log(content))
+  .catch(error => console.error(error))
 ```
