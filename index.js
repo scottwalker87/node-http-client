@@ -153,21 +153,23 @@ class HttpClient {
       
       // Создать запрос
       const request = driver.request(options, response => {
-        let body = ''
+        let body = ""
 
         // Слушать событие передачи тела запроса
         response.on('data', chunk => { body += chunk })
     
         // Слушать событие завершения запроса
         response.on('close', () => {
+          const headers = response.headers || {}
+
           // Проверить тип контента на JSON
-          const isJsonBody = this.isJsonContent(response.headers)
+          const isJsonBody = this.isJsonContent(headers)
 
           try {
             // Форматировать тело ответа в JSON (если пришел соответствующий заголовок)
             body = isJsonBody ? JSON.parse(body) : body
           } finally {
-            resolve({ body, response })
+            resolve({ body, headers, response })
           }
         })
       })
@@ -276,7 +278,7 @@ class HttpClient {
 }
 
 // Пресеты заголовков запроса
-const headers = {
+const presetHeaders = {
   json: {
     'Accept': CONTENT_TYPE_JSON,
     "Content-Type": `${CONTENT_TYPE_JSON}; charset=UTF-8`
@@ -295,5 +297,5 @@ module.exports = {
   METHOD_HEAD,
   CONTENT_TYPE_JSON,
   CONTENT_TYPE_FORM,
-  headers
+  presetHeaders
 }
